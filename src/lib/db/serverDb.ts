@@ -1,16 +1,22 @@
-﻿import { 
+﻿import fs from 'fs';
+import path from 'path';
+import { 
   Project, 
-  MangroveTelemetryInput, 
-  MRVCalculationResult, 
   CreditHolding, 
   RetirementCertificate, 
-  BlockchainTransaction,
-  FieldInspectionReport,
-  GeoCoordinate
+  BlockchainTransaction 
 } from '@/types';
-import { calculateMangroveMRV } from '@/lib/mrv/mangrove';
 
-const STORAGE_KEY = 'bluetrace_registry_db_v1';
+export interface DatabaseSchema {
+  projects: Project[];
+  holdings: CreditHolding[];
+  certificates: RetirementCertificate[];
+  transactions: BlockchainTransaction[];
+  lastUpdated: string;
+}
+
+const DB_DIR = path.join(process.cwd(), 'data');
+const DB_FILE = path.join(DB_DIR, 'bluetrace_db.json');
 
 const INITIAL_PROJECTS: Project[] = [
   {
@@ -383,404 +389,46 @@ const INITIAL_TXS: BlockchainTransaction[] = [
   }
 ];
 
-class RegistryStore {
-  private projects: Project[] = INITIAL_PROJECTS;
-  private holdings: CreditHolding[] = INITIAL_HOLDINGS;
-  private certificates: RetirementCertificate[] = INITIAL_CERTIFICATES;
-  private transactions: BlockchainTransaction[] = INITIAL_TXS;
-  private isInitialized = false;
-
-  constructor() {
-    this.initialize();
-  }
-
-  private initialize() {
-    if (typeof window !== 'undefined') {
-      try {
-        const localData = localStorage.getItem(STORAGE_KEY);
-        if (localData) {
-          const parsed = JSON.parse(localData);
-          this.projects = parsed.projects || INITIAL_PROJECTS;
-          this.holdings = parsed.holdings || INITIAL_HOLDINGS;
-          this.certificates = parsed.certificates || INITIAL_CERTIFICATES;
-          this.transactions = parsed.transactions || INITIAL_TXS;
-          this.isInitialized = true;
-          return;
-        }
-      } catch (e) {
-        console.warn('LocalStorage load error:', e);
-      }
+export function getDatabase(): DatabaseSchema {
+  try {
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true });
     }
-    this.isInitialized = true;
-  }
 
-  private syncStorage() {
-    if (typeof window !== 'undefined') {
-      try {
-        const payload = {
-          projects: this.projects,
-          holdings: this.holdings,
-          certificates: this.certificates,
-          transactions: this.transactions,
-          lastUpdated: new Date().toISOString()
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-      } catch (e) {
-        console.error('LocalStorage write error:', e);
-      }
+    if (!fs.existsSync(DB_FILE)) {
+      const initialDb: DatabaseSchema = {
+        projects: INITIAL_PROJECTS,
+        holdings: INITIAL_HOLDINGS,
+        certificates: INITIAL_CERTIFICATES,
+        transactions: INITIAL_TXS,
+        lastUpdated: new Date().toISOString()
+      };
+      fs.writeFileSync(DB_FILE, JSON.stringify(initialDb, null, 2), 'utf-8');
+      return initialDb;
     }
-  }
 
-  getProjects(): Project[] {
-    if (!this.isInitialized) this.initialize();
-    return [...this.projects];
-  }
-
-  getProjectById(id: string): Project | undefined {
-    if (!this.isInitialized) this.initialize();
-    return this.projects.find(p => p.id === id || p.slug === id);
-  }
-
-  getHoldings(): CreditHolding[] {
-    if (!this.isInitialized) this.initialize();
-    return [...this.holdings];
-  }
-
-  getCertificates(): RetirementCertificate[] {
-    if (!this.isInitialized) this.initialize();
-    return [...this.certificates];
-  }
-
-  getCertificateById(id: string): RetirementCertificate | undefined {
-    if (!this.isInitialized) this.initialize();
-    return this.certificates.find(c => c.certificateId === id);
-  }
-
-  getTransactions(): BlockchainTransaction[] {
-    if (!this.isInitialized) this.initialize();
-    return [...this.transactions];
-  }
-
-  registerProject(projectData: Omit<Project, 'id' | 'status' | 'registeredDate' | 'evidenceFiles' | 'totalCreditsIssued' | 'totalCreditsRetired'>): Project {
-    if (!this.isInitialized) this.initialize();
-    const nextIdx = this.projects.length + 1;
-    const id = `BCR-IND-00${nextIdx}`;
-    const txHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-    
-    const newProject: Project = {
-      ...projectData,
-      id,
-      status: 'submitted',
-      registeredDate: new Date().toISOString().split('T')[0],
-      evidenceFiles: [],
-      totalCreditsIssued: 0,
-      totalCreditsRetired: 0,
-      blockchainTx: {
-        registryTxHash: txHash
-      }
+    const data = fs.readFileSync(DB_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading database file:', error);
+    return {
+      projects: INITIAL_PROJECTS,
+      holdings: INITIAL_HOLDINGS,
+      certificates: INITIAL_CERTIFICATES,
+      transactions: INITIAL_TXS,
+      lastUpdated: new Date().toISOString()
     };
-
-    this.projects.unshift(newProject);
-
-    this.transactions.unshift({
-      id: `tx-${Date.now()}`,
-      txHash,
-      blockNumber: 4893120 + this.projects.length,
-      timestamp: new Date().toISOString(),
-      from: projectData.developerWallet,
-      to: '0xRegistryContract119a0A678d10',
-      type: 'PROJECT_REGISTRATION',
-      details: `Project ${id} (${projectData.name}, ${projectData.areaHectares}ha) registered on-chain & persisted to database.`
-    });
-
-    this.syncStorage();
-    return newProject;
-  }
-
-  // PROJECT OWNER ACCESS: Edit Location & GIS Coordinates
-  updateProjectLocation(
-    projectId: string, 
-    centerLat: number, 
-    centerLng: number, 
-    areaHectares: number, 
-    region: string, 
-    country: string,
-    coordinates?: GeoCoordinate[]
-  ): Project {
-    if (!this.isInitialized) this.initialize();
-    const project = this.getProjectById(projectId);
-    if (!project) throw new Error('Project not found');
-
-    const txHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-
-    const newCoords = coordinates || [
-      { lat: centerLat + 0.015, lng: centerLng - 0.015 },
-      { lat: centerLat + 0.018, lng: centerLng + 0.012 },
-      { lat: centerLat - 0.012, lng: centerLng + 0.016 },
-      { lat: centerLat - 0.015, lng: centerLng - 0.010 },
-    ];
-
-    project.centerCoordinate = { lat: centerLat, lng: centerLng };
-    project.coordinates = newCoords;
-    project.areaHectares = areaHectares;
-    project.region = region;
-    project.country = country;
-
-    // If was rejected, resetting status to 'submitted' / 'field_review' for re-inspection
-    if (project.status === 'rejected') {
-      project.status = 'submitted';
-    }
-
-    if (project.telemetryData) {
-      project.mrvResult = calculateMangroveMRV(project.telemetryData, areaHectares);
-    }
-
-    this.transactions.unshift({
-      id: `tx-${Date.now()}`,
-      txHash,
-      blockNumber: 4893120 + this.transactions.length,
-      timestamp: new Date().toISOString(),
-      from: project.developerWallet,
-      to: '0xRegistryContract119a0A678d10',
-      type: 'PROJECT_REGISTRATION',
-      details: `Project Owner updated GIS location & polygon boundary for ${project.id} (${areaHectares}ha at ${centerLat}°N, ${centerLng}°E). Persisted to database.`
-    });
-
-    this.syncStorage();
-    return project;
-  }
-
-  uploadTelemetryAndCalculate(projectId: string, telemetry: MangroveTelemetryInput): MRVCalculationResult {
-    if (!this.isInitialized) this.initialize();
-    const project = this.getProjectById(projectId);
-    if (!project) throw new Error('Project not found');
-
-    const result = calculateMangroveMRV(telemetry, project.areaHectares);
-    project.telemetryData = telemetry;
-    project.mrvResult = result;
-    project.status = 'field_review'; // Moves to Stage 2: Field Officer Ground-Truth
-
-    this.syncStorage();
-    return result;
-  }
-
-  // STAGE 2: Field Officer Review & Ground-Truthing (Approve OR Reject)
-  submitFieldInspection(
-    projectId: string, 
-    officerName: string, 
-    officerWallet: string, 
-    designation: string,
-    canopyVigorScore: number,
-    soilCoreSampleRef: string,
-    droneFlightRef: string,
-    fieldNotes: string,
-    status: 'approved' | 'rejected'
-  ): FieldInspectionReport {
-    if (!this.isInitialized) this.initialize();
-    const project = this.getProjectById(projectId);
-    if (!project) throw new Error('Project not found');
-
-    const fieldHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-    const txHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-
-    const inspectionReport: FieldInspectionReport = {
-      officerName,
-      officerWallet,
-      officerDesignation: designation,
-      inspectedAt: new Date().toISOString().split('T')[0],
-      gpsGroundTruthVerified: status === 'approved',
-      canopyVigorScore,
-      soilCoreSampleRef,
-      droneFlightRef,
-      fieldNotes,
-      inspectionStatus: status,
-      fieldReportHash: fieldHash
-    };
-
-    project.fieldInspection = inspectionReport;
-    project.status = status === 'approved' ? 'field_approved' : 'rejected';
-    
-    if (!project.blockchainTx) {
-      project.blockchainTx = { registryTxHash: txHash };
-    }
-    project.blockchainTx.fieldSignTxHash = txHash;
-
-    this.transactions.unshift({
-      id: `tx-${Date.now()}`,
-      txHash,
-      blockNumber: 4893120 + this.transactions.length,
-      timestamp: new Date().toISOString(),
-      from: officerWallet,
-      to: '0xRegistryContract119a0A678d10',
-      type: 'FIELD_INSPECTION_SIGN',
-      details: `Field Officer ${officerName} stamped ${status.toUpperCase()} on project ${project.id}. Saved to database.`
-    });
-
-    this.syncStorage();
-    return inspectionReport;
-  }
-
-  // STAGE 3: Independent Verifier Reject Action
-  rejectVerifierAudit(projectId: string, verifierName: string, verifierWallet: string, rejectionReason: string): Project {
-    if (!this.isInitialized) this.initialize();
-    const project = this.getProjectById(projectId);
-    if (!project) throw new Error('Project not found');
-
-    const txHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-
-    project.status = 'rejected';
-    if (project.fieldInspection) {
-      project.fieldInspection.fieldNotes += ` | Verifier Audit Rejected: ${rejectionReason}`;
-    }
-
-    this.transactions.unshift({
-      id: `tx-${Date.now()}`,
-      txHash,
-      blockNumber: 4893120 + this.transactions.length,
-      timestamp: new Date().toISOString(),
-      from: verifierWallet,
-      to: '0xRegistryContract119a0A678d10',
-      type: 'MRV_VERIFIED',
-      details: `Verifier ${verifierName} REJECTED project ${project.id}. Reason: ${rejectionReason}. Persisted to database.`
-    });
-
-    this.syncStorage();
-    return project;
-  }
-
-  // STAGE 3: Final Verification & Credit Minting by Administrator / Independent Verifier
-  verifyAndIssueCredits(projectId: string, verifierName: string, verifierWallet: string, notes: string): { txHash: string; creditsMinted: number } {
-    if (!this.isInitialized) this.initialize();
-    const project = this.getProjectById(projectId);
-    if (!project) throw new Error('Project not found');
-    
-    // Auto-calculate MRV if missing
-    if (!project.mrvResult) {
-      if (project.telemetryData) {
-        project.mrvResult = calculateMangroveMRV(project.telemetryData, project.areaHectares);
-      } else {
-        const defaultTelemetry: MangroveTelemetryInput = {
-          averageDbhCm: 14.5,
-          treeDensityPerHa: 1400,
-          woodDensityGcm3: 0.73,
-          canopyHeightMeters: 7.8,
-          soilBulkDensityGcm3: 1.20,
-          soilOrganicCarbonPercent: 3.40,
-          soilDepthSampledCm: 100,
-          ndwiWaterIndex: 0.45,
-          ndviMeanIndex: 0.75,
-          baselineCarbonStockPerHa: 30.0,
-          monitoringYear: 2026,
-        };
-        project.telemetryData = defaultTelemetry;
-        project.mrvResult = calculateMangroveMRV(defaultTelemetry, project.areaHectares);
-      }
-    }
-
-    const creditsToMint = Math.round(project.mrvResult.netIssuableCreditsTCO2e * 10) / 10;
-    const txHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-    const batchId = `BCT-2026-V1-00${this.holdings.length + 1}`;
-    const serialRange = `${project.id}-2026-B1-0001-${Math.round(creditsToMint)}`;
-
-    project.status = 'credits_issued';
-    project.totalCreditsIssued = creditsToMint;
-
-    if (!project.blockchainTx) {
-      project.blockchainTx = { registryTxHash: txHash };
-    }
-    project.blockchainTx.verifierTxHash = txHash;
-    project.blockchainTx.verifierAddress = verifierWallet;
-    project.blockchainTx.verifierName = verifierName;
-    project.blockchainTx.issuedTokenBatchId = batchId;
-    project.blockchainTx.serialRange = serialRange;
-
-    // Create holding in Project Developer's wallet
-    const newHolding: CreditHolding = {
-      id: `HOLD-00${this.holdings.length + 1}`,
-      projectId: project.id,
-      projectName: project.name,
-      batchId,
-      vintage: 2026,
-      serialRange,
-      availableCredits: creditsToMint,
-      totalMintedCredits: creditsToMint,
-      retiredCredits: 0,
-      holderWallet: project.developerWallet,
-      ecosystemType: project.ecosystemType,
-      issuanceTxHash: txHash,
-    };
-
-    this.holdings.unshift(newHolding);
-
-    this.transactions.unshift({
-      id: `tx-${Date.now()}`,
-      txHash,
-      blockNumber: 4893130 + this.transactions.length,
-      timestamp: new Date().toISOString(),
-      from: verifierWallet,
-      to: project.developerWallet,
-      type: 'CREDITS_MINTED',
-      details: `Independent Verifier (${verifierName}) approved & minted ${creditsToMint.toLocaleString()} BCT tokens (Batch ${batchId}) with serial range ${serialRange}. Saved to database.`
-    });
-
-    this.syncStorage();
-    return { txHash, creditsMinted: creditsToMint };
-  }
-
-  retireCredits(holdingId: string, amount: number, retireeName: string, beneficiary: string, reason: string): RetirementCertificate {
-    if (!this.isInitialized) this.initialize();
-    const holding = this.holdings.find(h => h.id === holdingId);
-    if (!holding) throw new Error('Credit holding not found');
-    if (amount <= 0 || amount > holding.availableCredits) throw new Error('Invalid retirement amount');
-
-    const certId = `CERT-2026-00${this.certificates.length + 1}`;
-    const burnTxHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-    const certHash = 'sha256-' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-
-    holding.availableCredits -= amount;
-    holding.retiredCredits += amount;
-
-    const project = this.getProjectById(holding.projectId);
-    if (project) {
-      project.totalCreditsRetired += amount;
-    }
-
-    const newCertificate: RetirementCertificate = {
-      certificateId: certId,
-      holdingId,
-      projectId: holding.projectId,
-      projectName: holding.projectName,
-      batchId: holding.batchId,
-      vintage: 2026,
-      serialRange: `${holding.serialRange.split('-').slice(0, 4).join('-')}-R0001-${amount}`,
-      amountTCO2e: amount,
-      retireeName,
-      beneficiary,
-      reason,
-      retiredAt: new Date().toISOString(),
-      retiredTimestamp: new Date().toISOString(),
-      burnerWallet: holding.holderWallet,
-      burnTxHash,
-      onChainTxHash: burnTxHash,
-      immutableCertificateHash: certHash,
-    };
-
-    this.certificates.unshift(newCertificate);
-
-    this.transactions.unshift({
-      id: `tx-${Date.now()}`,
-      txHash: burnTxHash,
-      blockNumber: 4893140 + this.transactions.length,
-      timestamp: new Date().toISOString(),
-      from: holding.holderWallet,
-      to: '0x000000000000000000000000000000000000dEaD',
-      type: 'CREDITS_RETIRED',
-      details: `Permanently burned ${amount.toLocaleString()} BCT credits. Issued offset Certificate ${certId}. Persisted to database.`
-    });
-
-    this.syncStorage();
-    return newCertificate;
   }
 }
 
-export const store = new RegistryStore();
+export function saveDatabase(db: DatabaseSchema): void {
+  try {
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true });
+    }
+    db.lastUpdated = new Date().toISOString();
+    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
+  } catch (error) {
+    console.error('Error saving database file:', error);
+  }
+}
