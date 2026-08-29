@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { store } from '@/lib/store/registryStore';
@@ -59,7 +59,7 @@ export default function TransparencyLedgerPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-8 rounded-3xl glass-card border border-teal-500/20 bg-gradient-to-r from-slate-900 via-teal-950/20 to-slate-900">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-8 rounded-3xl glass-panel border border-teal-500/20 bg-gradient-to-r from-slate-900 via-teal-950/20 to-slate-900">
         <div>
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-teal-500/10 text-teal-400 border border-teal-500/20 text-xs font-semibold mb-2">
             <BarChart3 className="w-3.5 h-3.5" /> Public Transparency & Proof of System

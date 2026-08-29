@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -50,11 +50,11 @@ export default function DeveloperProjectDetailPage() {
 
   // Edit Location Modal State
   const [isEditLocationOpen, setIsEditLocationOpen] = useState(false);
-  const [editLat, setEditLat] = useState(project.centerCoordinate.lat);
-  const [editLng, setEditLng] = useState(project.centerCoordinate.lng);
-  const [editArea, setEditArea] = useState(project.areaHectares);
-  const [editRegion, setEditRegion] = useState(project.region);
-  const [editCountry, setEditCountry] = useState(project.country);
+  const [editLat, setEditLat] = useState(project?.centerCoordinate?.lat ?? 21.8400);
+  const [editLng, setEditLng] = useState(project?.centerCoordinate?.lng ?? 88.8425);
+  const [editArea, setEditArea] = useState(project?.areaHectares ?? 150);
+  const [editRegion, setEditRegion] = useState(project?.region ?? 'Coastal Region');
+  const [editCountry, setEditCountry] = useState(project?.country ?? 'India');
   const [isGpsDetecting, setIsGpsDetecting] = useState(false);
   const [locationSuccessMsg, setLocationSuccessMsg] = useState<string | null>(null);
 

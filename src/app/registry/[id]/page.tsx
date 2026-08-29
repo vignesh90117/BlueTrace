@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -165,7 +165,7 @@ export default function PublicProjectProfilePage() {
         <div className="p-7 rounded-3xl glass-panel space-y-5 border border-slate-800 flex flex-col justify-between">
           <div>
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-teal-400" /> Dominant Mangrove Floral Inventory
+              <Layers className="w-4 h-4 text-teal-400" /> Dominant {project.ecosystemType} Flora & Species Inventory
             </h3>
             <div className="flex flex-wrap gap-2">
               {project.dominantSpecies.map((sp, idx) => (

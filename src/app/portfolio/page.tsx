@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -23,13 +23,7 @@ import {
 
 export default function PortfolioPage() {
   const { walletAddress, userName } = useRole();
-  const holdings = store.getHoldings();
-  const certificates = store.getCertificates();
-
-  const totalCreditsHeld = holdings.reduce((acc, h) => acc + h.availableCredits, 0);
-  const totalCreditsRetired = certificates.reduce((acc, c) => acc + c.amountTCO2e, 0);
-
-  // Retirement modal form state
+  const [refreshKey, setRefreshKey] = useState(0);
   const [selectedHoldingId, setSelectedHoldingId] = useState<string | null>(null);
   const [retireAmount, setRetireAmount] = useState<number>(100);
   const [retireeName, setRetireeName] = useState<string>('EcoTech Global ESG Portfolio');
@@ -38,6 +32,10 @@ export default function PortfolioPage() {
   const [isRetiring, setIsRetiring] = useState(false);
   const [retirementSuccessCertId, setRetirementSuccessCertId] = useState<string | null>(null);
 
+  const holdings = store.getHoldings();
+  const certificates = store.getCertificates();
+  const totalCreditsHeld = holdings.reduce((acc, h) => acc + h.availableCredits, 0);
+  const totalCreditsRetired = certificates.reduce((acc, c) => acc + c.amountTCO2e, 0);
   const selectedHolding = holdings.find(h => h.id === selectedHoldingId);
 
   const handleRetireSubmit = (e: React.FormEvent) => {
@@ -55,6 +53,7 @@ export default function PortfolioPage() {
           reason
         );
         setIsRetiring(false);
+        setRefreshKey(k => k + 1);
         setRetirementSuccessCertId(cert.certificateId);
       } catch (err: any) {
         alert(err.message);
