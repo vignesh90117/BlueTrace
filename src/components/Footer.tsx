@@ -4,7 +4,7 @@ import { Waves, Shield, CheckCircle2, FileCode, Github, ExternalLink } from 'luc
 
 export const Footer = () => {
   return (
-    <footer className="border-t border-slate-850 bg-slate-950 text-slate-400 text-sm mt-20">
+    <footer className="border-t border-slate-850 bg-slate-950 text-slate-400 text-sm mt-20 no-print">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div className="md:col-span-1">
@@ -12,7 +12,7 @@ export const Footer = () => {
               <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center text-slate-950 font-bold">
                 <Waves className="w-5 h-5 stroke-[2.5]" />
               </div>
-              <span className="font-bold text-white text-base">AquaCarbon MRV</span>
+              <span className="font-bold text-white text-base">BlueTrace MRV</span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
               Next-generation decentralized Blue Carbon Registry and automated Measurement, Reporting & Verification (MRV) engine for coastal wetland ecosystems.
@@ -66,18 +66,20 @@ export const Footer = () => {
           </div>
 
           <div>
-            <h4 className="text-white font-semibold text-xs tracking-wider uppercase mb-3">Registry Roles</h4>
+            <h4 className="text-white font-semibold text-xs tracking-wider uppercase mb-3">Registry Workspaces</h4>
             <div className="space-y-1.5 text-xs">
               <Link href="/registry" className="block hover:text-teal-300 transition-colors">Public Explorer & Transparency</Link>
-              <Link href="/developer" className="block hover:text-teal-300 transition-colors">Developer Project Management</Link>
-              <Link href="/verifier" className="block hover:text-teal-300 transition-colors">Auditor & Verifier Workbench</Link>
-              <Link href="/portfolio" className="block hover:text-teal-300 transition-colors">Credit Portfolio & Retirement Hub</Link>
+              <Link href="/developer" className="block hover:text-teal-300 transition-colors">1. Project Owner Workspace</Link>
+              <Link href="/field-officer" className="block hover:text-teal-300 transition-colors">2. Field Officer Workspace</Link>
+              <Link href="/verifier" className="block hover:text-teal-300 transition-colors">3. Independent Verifier Workbench</Link>
+              <Link href="/portfolio" className="block hover:text-teal-300 transition-colors">4. Credit Buyer & Retirement Hub</Link>
+              <Link href="/admin" className="block hover:text-teal-300 transition-colors">5. Registry Authority Console</Link>
             </div>
           </div>
         </div>
 
         <div className="border-t border-slate-800/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© 2026 AquaCarbon Blue Carbon Registry & MRV Protocol. Built for Smart India Hackathon & Environmental Integrity.</p>
+          <p>© 2026 BlueTrace Blue Carbon Registry & MRV Protocol. Built for Environmental Integrity & High-Durability Sequestration.</p>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1 text-slate-400"><Shield className="w-3.5 h-3.5 text-teal-400" /> Anti-Double-Counting Guard Active</span>
           </div>
