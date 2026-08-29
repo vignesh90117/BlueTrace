@@ -1,6 +1,14 @@
 ﻿export type UserRole = 'public' | 'developer' | 'field_officer' | 'verifier' | 'buyer' | 'admin';
 
-export type EcosystemType = 'Mangrove' | 'Seagrass' | 'Salt Marsh' | 'Coastal Wetland';
+export type EcosystemType = 
+  | 'Mangrove' 
+  | 'Seagrass' 
+  | 'Salt Marsh' 
+  | 'Coastal Wetland' 
+  | 'Kelp Forest' 
+  | 'Tidal Estuary' 
+  | 'Coral Barrier Buffer'
+  | string;
 
 export type ProjectStatus = 
   | 'draft'
