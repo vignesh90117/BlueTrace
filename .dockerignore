@@ -1,0 +1,12 @@
+﻿node_modules
+.next
+.git
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose.yml
+README.md
+*.log
+scratch/
+test-*.ps1
+audit-*.ps1

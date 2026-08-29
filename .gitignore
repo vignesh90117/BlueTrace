@@ -37,3 +37,6 @@ next-env.d.ts
 scratch/
 test-routes.ps1
 audit-routes.ps1
+
+*.msi
+
