@@ -21,11 +21,14 @@ import {
   Layers,
   Award,
   XCircle,
-  ExternalLink
+  ExternalLink,
+  ArrowRight
 } from 'lucide-react';
 
 export default function FieldOfficerPage() {
   const { walletAddress, userName } = useRole();
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const projects = store.getProjects();
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>(
@@ -73,6 +76,7 @@ export default function FieldOfficerPage() {
         );
         setIsSubmitting(false);
         setSuccessReport(report);
+        setRefreshKey(k => k + 1); // Force immediate UI refresh
       } catch (err: any) {
         alert(err.message);
         setIsSubmitting(false);
@@ -103,6 +107,7 @@ export default function FieldOfficerPage() {
         );
         setIsSubmitting(false);
         setRejectionMessage(`Project ${selectedProject.id} rejected. Feedback dispatched to Project Owner.`);
+        setRefreshKey(k => k + 1); // Force immediate UI refresh
       } catch (err: any) {
         alert(err.message);
         setIsSubmitting(false);
@@ -141,7 +146,7 @@ export default function FieldOfficerPage() {
         </div>
 
         {/* 3-Stage Lifecycle Tracker for Selected Project */}
-        <ReviewStageTracker project={selectedProject} />
+        <ReviewStageTracker key={`tracker-${refreshKey}-${selectedProject.id}`} project={selectedProject} />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
@@ -231,7 +236,7 @@ export default function FieldOfficerPage() {
               projectName={selectedProject.name}
               areaHectares={selectedProject.areaHectares}
               ndviScore={selectedProject.telemetryData?.ndviMeanIndex || 0.78}
-              heightClass="h-[400px]"
+              heightClass="h-[380px]"
             />
 
             {/* Ground-Truth Checklist & Report Form */}
@@ -249,9 +254,9 @@ export default function FieldOfficerPage() {
               </div>
 
               {successReport && (
-                <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs space-y-2 animate-in zoom-in-95 duration-150">
-                  <div className="font-bold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Field Ground-Truth Inspection Approved & Forwarded to Stage 3!
+                <div className="p-5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs space-y-2 animate-in zoom-in-95 duration-150">
+                  <div className="font-bold flex items-center gap-2 text-sm text-emerald-400">
+                    <CheckCircle2 className="w-5 h-5" /> Field Ground-Truth Inspection Approved & Forwarded to Stage 3!
                   </div>
                   <div className="font-mono text-[11px] text-slate-300 break-all">
                     Field Report SHA-256 Hash: <strong className="text-teal-300">{successReport.fieldReportHash}</strong>

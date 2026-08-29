@@ -227,7 +227,7 @@ const INITIAL_PROJECTS: Project[] = [
     developerName: 'Priya Jadeja',
     developerWallet: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
     organization: 'Gujarat Ecology Commission',
-    status: 'submitted',
+    status: 'field_approved',
     registeredDate: '2025-09-20',
     plantingStartDate: '2025-10-05',
     methodology: 'VM0033 (Tidal Wetland Restoration)',
@@ -242,10 +242,59 @@ const INITIAL_PROJECTS: Project[] = [
     description: 'Arid zone mangrove afforestation in the intertidal mudflats of the Gulf of Kutch to establish high-durability sediment carbon reservoirs in hyper-saline conditions.',
     baselineSummary: 'Barren saline coastal mudflat with sparse scrub vegetation (<15 tC/ha).',
     evidenceFiles: [],
+    telemetryData: {
+      averageDbhCm: 11.5,
+      treeDensityPerHa: 1200,
+      woodDensityGcm3: 0.70,
+      canopyHeightMeters: 5.5,
+      soilBulkDensityGcm3: 1.25,
+      soilOrganicCarbonPercent: 2.80,
+      soilDepthSampledCm: 100,
+      ndwiWaterIndex: 0.38,
+      ndviMeanIndex: 0.68,
+      baselineCarbonStockPerHa: 15.0,
+      monitoringYear: 2026,
+    },
+    mrvResult: {
+      agbDryMatterKgPerTree: 74.2,
+      totalAgbDryMatterTonnesPerHa: 89.04,
+      agbBiomassTonnesPerHa: 89.04,
+      agbCarbonTonnesPerHa: 41.85,
+      carbonStockAgbTCPerHa: 41.85,
+      carbonStockBgbTCPerHa: 17.02,
+      bgbBiomassTonnesPerHa: 43.63,
+      bgbCarbonTonnesPerHa: 17.02,
+      carbonStockSocTCPerHa: 35.00,
+      socCarbonTonnesPerHa: 35.00,
+      totalCarbonStockTCPerHa: 93.87,
+      totalCurrentCarbonStockPerHa: 93.87,
+      netCarbonStockDeltaTCPerHa: 78.87,
+      grossSequesteredTCO2e: 69395.6,
+      totalGrossSequestrationTCO2e: 69395.6,
+      permanenceBufferPoolTCO2e: 10409.3,
+      bufferPoolDeductionTCO2e: 10409.3,
+      netIssuableCreditsTCO2e: 58986.3,
+      reportSha256Hash: 'e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6',
+      calculatedAt: '2026-02-10T09:00:00Z',
+    },
+    fieldInspection: {
+      officerName: 'Rajesh Sen',
+      officerWallet: '0x5592EC0cfb4dbc12D3aD100b257153436a1f0FEa',
+      officerDesignation: 'State Forest & Coastal Ecosystem Officer',
+      inspectedAt: '2026-02-12',
+      gpsGroundTruthVerified: true,
+      canopyVigorScore: 88.5,
+      soilCoreSampleRef: 'CORE-KTC-2026-02',
+      droneFlightRef: 'DRONE-KTC-FLIGHT-09',
+      fieldNotes: 'On-site DGPS ground survey completed. Verified 240 ha boundary. Avicennia marina survival rate 92%. Ready for Stage 3 Auditor sign-off.',
+      inspectionStatus: 'approved',
+      fieldReportHash: '0x33445566778899aabbccddeeff00112233445566778899aabbccddeeff001122'
+    },
     totalCreditsIssued: 0,
     totalCreditsRetired: 0,
     blockchainTx: {
       registryTxHash: '0x33445566778899aabbccddeeff00112233445566778899aabbccddeeff001122',
+      fieldSignTxHash: '0x5566778899aabbccddeeff00112233445566778899aabbccddeeff0011223344'
     }
   }
 ];
@@ -339,7 +388,7 @@ class RegistryStore {
   private transactions: BlockchainTransaction[] = INITIAL_TXS;
 
   getProjects(): Project[] {
-    return this.projects;
+    return [...this.projects];
   }
 
   getProjectById(id: string): Project | undefined {
@@ -347,11 +396,11 @@ class RegistryStore {
   }
 
   getHoldings(): CreditHolding[] {
-    return this.holdings;
+    return [...this.holdings];
   }
 
   getCertificates(): RetirementCertificate[] {
-    return this.certificates;
+    return [...this.certificates];
   }
 
   getCertificateById(id: string): RetirementCertificate | undefined {
@@ -359,7 +408,7 @@ class RegistryStore {
   }
 
   getTransactions(): BlockchainTransaction[] {
-    return this.transactions;
+    return [...this.transactions];
   }
 
   registerProject(projectData: Omit<Project, 'id' | 'status' | 'registeredDate' | 'evidenceFiles' | 'totalCreditsIssued' | 'totalCreditsRetired'>): Project {
@@ -543,7 +592,29 @@ class RegistryStore {
   verifyAndIssueCredits(projectId: string, verifierName: string, verifierWallet: string, notes: string): { txHash: string; creditsMinted: number } {
     const project = this.getProjectById(projectId);
     if (!project) throw new Error('Project not found');
-    if (!project.mrvResult) throw new Error('MRV calculations not completed yet');
+    
+    // Auto-calculate MRV if missing
+    if (!project.mrvResult) {
+      if (project.telemetryData) {
+        project.mrvResult = calculateMangroveMRV(project.telemetryData, project.areaHectares);
+      } else {
+        const defaultTelemetry: MangroveTelemetryInput = {
+          averageDbhCm: 14.5,
+          treeDensityPerHa: 1400,
+          woodDensityGcm3: 0.73,
+          canopyHeightMeters: 7.8,
+          soilBulkDensityGcm3: 1.20,
+          soilOrganicCarbonPercent: 3.40,
+          soilDepthSampledCm: 100,
+          ndwiWaterIndex: 0.45,
+          ndviMeanIndex: 0.75,
+          baselineCarbonStockPerHa: 30.0,
+          monitoringYear: 2026,
+        };
+        project.telemetryData = defaultTelemetry;
+        project.mrvResult = calculateMangroveMRV(defaultTelemetry, project.areaHectares);
+      }
+    }
 
     const creditsToMint = Math.round(project.mrvResult.netIssuableCreditsTCO2e * 10) / 10;
     const txHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
