@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { store } from '@/lib/store/registryStore';
 import { useRole } from '@/components/RoleContext';
-import { EcosystemType } from '@/types';
+import { EcosystemType, GeoCoordinate } from '@/types';
+import { DynamicMapViewer as MapViewer } from '@/components/DynamicMapViewer';
 import { 
   TreePine, 
   MapPin, 
@@ -19,7 +20,9 @@ import {
   Sparkles,
   Waves,
   Leaf,
-  Layers
+  Layers,
+  Sliders,
+  Maximize2
 } from 'lucide-react';
 
 export default function NewProjectWizardPage() {
@@ -31,19 +34,25 @@ export default function NewProjectWizardPage() {
   const [isDetectingGps, setIsDetectingGps] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<string | null>(null);
 
+  // Step 1: Project Identity
   const [name, setName] = useState('');
   const [ecosystemType, setEcosystemType] = useState<EcosystemType>('Mangrove');
   const [country, setCountry] = useState('India');
   const [region, setRegion] = useState('');
   const [areaHectares, setAreaHectares] = useState(150);
   const [organization, setOrganization] = useState('Coastal Wetland Bio-Restoration Council');
+  
+  // Step 2: Location & Scaling
+  const [centerLat, setCenterLat] = useState(21.8420);
+  const [centerLng, setCenterLng] = useState(88.8250);
+  const [boundaryScale, setBoundaryScale] = useState(1.0); // 0.5x to 3.0x scale multiplier
+
+  // Step 3: Methodology & Species
   const [plantingStartDate, setPlantingStartDate] = useState('2025-01-15');
   const [methodology, setMethodology] = useState('VM0033 (Tidal Wetland Restoration)');
   const [speciesInput, setSpeciesInput] = useState('Rhizophora mucronata, Avicennia marina, Ceriops decandra');
   const [description, setDescription] = useState('');
   const [baselineSummary, setBaselineSummary] = useState('');
-  const [centerLat, setCenterLat] = useState(21.8500);
-  const [centerLng, setCenterLng] = useState(88.8500);
 
   // Preset ecosystem templates
   const ecosystemPresets = [
@@ -97,6 +106,14 @@ export default function NewProjectWizardPage() {
     setSpeciesInput(item.defaultSpecies);
   };
 
+  // Compute dynamic polygon coordinates based on center & boundary scale
+  const dynamicCoordinates: GeoCoordinate[] = [
+    { lat: Number((centerLat + 0.015 * boundaryScale).toFixed(5)), lng: Number((centerLng - 0.015 * boundaryScale).toFixed(5)) },
+    { lat: Number((centerLat + 0.018 * boundaryScale).toFixed(5)), lng: Number((centerLng + 0.012 * boundaryScale).toFixed(5)) },
+    { lat: Number((centerLat - 0.012 * boundaryScale).toFixed(5)), lng: Number((centerLng + 0.016 * boundaryScale).toFixed(5)) },
+    { lat: Number((centerLat - 0.015 * boundaryScale).toFixed(5)), lng: Number((centerLng - 0.010 * boundaryScale).toFixed(5)) },
+  ];
+
   // GPS Auto-Detection Handler
   const handleDetectGPS = () => {
     if (!navigator.geolocation) {
@@ -126,20 +143,19 @@ export default function NewProjectWizardPage() {
     );
   };
 
+  // When scaling slider moves, dynamically adjust estimated hectares
+  const handleScaleChange = (newScale: number) => {
+    setBoundaryScale(newScale);
+    const scaledArea = Math.round(150 * Math.pow(newScale, 2));
+    setAreaHectares(scaledArea);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     setTimeout(() => {
       const species = speciesInput.split(',').map(s => s.trim()).filter(Boolean);
-      
-      const coords = [
-        { lat: centerLat + 0.015, lng: centerLng - 0.015 },
-        { lat: centerLat + 0.018, lng: centerLng + 0.012 },
-        { lat: centerLat - 0.012, lng: centerLng + 0.016 },
-        { lat: centerLat - 0.015, lng: centerLng - 0.010 },
-      ];
-
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
       const newProject = store.registerProject({
@@ -155,7 +171,7 @@ export default function NewProjectWizardPage() {
         plantingStartDate,
         methodology,
         dominantSpecies: species.length > 0 ? species : ['Coastal Blue Carbon Flora'],
-        coordinates: coords,
+        coordinates: dynamicCoordinates,
         centerCoordinate: { lat: centerLat, lng: centerLng },
         description: description || `Large-scale ${ecosystemType} coastal restoration project covering ${areaHectares} hectares.`,
         baselineSummary: baselineSummary || `Degraded coastal intertidal zone. Baseline carbon stock measured before restorative interventions.`,
@@ -190,7 +206,7 @@ export default function NewProjectWizardPage() {
           Register Blue Carbon Project
         </h1>
         <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
-          Register any blue carbon project (Mangrove, Seagrass, Salt Marsh, Kelp, Wetlands) into the persistent blockchain registry.
+          Register any blue carbon project (Mangrove, Seagrass, Salt Marsh, Kelp, Wetlands) into the persistent blockchain registry with interactive location scaling.
         </p>
       </div>
 
@@ -200,7 +216,7 @@ export default function NewProjectWizardPage() {
           1. Ecosystem & Name
         </div>
         <div className={`p-3 rounded-2xl border transition-all ${step >= 2 ? 'bg-teal-500/15 border-teal-500/40 text-teal-300' : 'bg-slate-900 border-slate-800 text-slate-500'}`}>
-          2. GPS & Coordinates
+          2. GPS & Location Scaling
         </div>
         <div className={`p-3 rounded-2xl border transition-all ${step >= 3 ? 'bg-teal-500/15 border-teal-500/40 text-teal-300' : 'bg-slate-900 border-slate-800 text-slate-500'}`}>
           3. Species & Baseline
@@ -270,7 +286,7 @@ export default function NewProjectWizardPage() {
 
                 <div>
                   <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Restoration Area (Hectares) *
+                    Initial Restoration Area (Hectares) *
                   </label>
                   <input
                     type="number"
@@ -291,22 +307,22 @@ export default function NewProjectWizardPage() {
                 onClick={() => setStep(2)}
                 className="px-6 py-3 rounded-xl bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-teal-500/20 disabled:opacity-50 transition-all"
               >
-                <span>Continue to Location & GPS</span>
+                <span>Continue to Location & Scaling</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 2: Location & GPS Auto-Detection */}
+        {/* STEP 2: Location, GPS & Interactive Boundary Scaling */}
         {step === 2 && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-teal-400" /> Geographic Location & GPS
+                  <MapPin className="w-4 h-4 text-teal-400" /> Geographic Location & Boundary Scaling
                 </h3>
-                <p className="text-xs text-slate-400">Set the center coordinates or acquire real-time GPS coordinates.</p>
+                <p className="text-xs text-slate-400">Position the plot center, detect device GPS, and adjust the spatial boundary scaling slider.</p>
               </div>
 
               <button
@@ -335,6 +351,51 @@ export default function NewProjectWizardPage() {
                 <span>{gpsStatus}</span>
               </div>
             )}
+
+            {/* INTERACTIVE LOCATION SCALING SLIDER */}
+            <div className="p-5 rounded-2xl bg-slate-950 border border-teal-500/30 space-y-3 shadow-inner">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-teal-300 flex items-center gap-2 font-mono uppercase">
+                  <Sliders className="w-4 h-4 text-teal-400" /> Boundary Scaling & Spread Factor
+                </label>
+                <span className="text-xs font-mono font-bold text-white bg-slate-900 px-3 py-1 rounded-xl border border-slate-800">
+                  {boundaryScale.toFixed(2)}x Multiplier ({areaHectares} ha)
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Drag the slider to scale the boundary polygon spread and recalculate project coverage area in real-time:
+              </p>
+              <input
+                type="range"
+                min="0.5"
+                max="3.0"
+                step="0.1"
+                value={boundaryScale}
+                onChange={(e) => handleScaleChange(Number(e.target.value))}
+                className="w-full accent-teal-500"
+              />
+              <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                <span>0.5x (Tight Core Plot)</span>
+                <span>1.0x (Standard Wetland)</span>
+                <span>2.0x (Regional Delta)</span>
+                <span>3.0x (Macro Estuary)</span>
+              </div>
+            </div>
+
+            {/* LIVE SATELLITE MAP PREVIEW */}
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-slate-300 block font-mono">
+                Live Google Satellite Boundary Preview:
+              </span>
+              <MapViewer
+                coordinates={dynamicCoordinates}
+                centerCoordinate={{ lat: centerLat, lng: centerLng }}
+                projectName={name || 'New Project Boundary'}
+                areaHectares={areaHectares}
+                ndviScore={0.78}
+                heightClass="h-72"
+              />
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>

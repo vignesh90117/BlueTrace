@@ -1,10 +1,11 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRole } from '@/components/RoleContext';
 import { DynamicMapViewer as MapViewer } from '@/components/DynamicMapViewer';
 import { store } from '@/lib/store/registryStore';
+import { BlueCarbonMeasurementExplainer } from '@/components/BlueCarbonMeasurementExplainer';
 import { 
   Waves, 
   ShieldCheck, 
@@ -201,144 +202,9 @@ export default function LandingPage() {
         />
       </section>
 
-      {/* INTERACTIVE MRV CALCULATION SIMULATOR ON HOMEPAGE */}
+      {/* HOW BLUE CARBON CREDITS ARE MEASURED (Full Scientific 6-Stage Breakdown & Sandbox) */}
       <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="p-8 sm:p-12 rounded-3xl glass-panel border border-teal-500/30 shadow-2xl relative overflow-hidden">
-          
-          <div className="max-w-2xl mb-8">
-            <span className="text-xs font-bold text-teal-400 uppercase tracking-widest block mb-1">
-              Scientific Simulation Engine
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Test the IPCC VM0033 Blue Carbon MRV Allometrics
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Adjust tree trunk diameter, density, and soil carbon parameters to see real-time carbon sequestration and issuable credits.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            
-            {/* Sliders (6 cols) */}
-            <div className="lg:col-span-6 space-y-5">
-              
-              <div>
-                <div className="flex justify-between text-xs font-mono mb-1.5">
-                  <span className="text-slate-300 font-semibold">Average Tree DBH (Trunk Diameter)</span>
-                  <span className="text-teal-400 font-bold">{simDbh} cm</span>
-                </div>
-                <input
-                  type="range"
-                  min="8"
-                  max="28"
-                  step="0.5"
-                  value={simDbh}
-                  onChange={(e) => setSimDbh(Number(e.target.value))}
-                  className="w-full accent-teal-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
-                />
-                <span className="text-[10px] text-slate-500 font-mono">Allometric Komiyama Eq: AGB = 0.251 × ρ × (DBH)^2.46</span>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-mono mb-1.5">
-                  <span className="text-slate-300 font-semibold">Mangrove Tree Density</span>
-                  <span className="text-emerald-400 font-bold">{simDensity} trees/ha</span>
-                </div>
-                <input
-                  type="range"
-                  min="600"
-                  max="2500"
-                  step="50"
-                  value={simDensity}
-                  onChange={(e) => setSimDensity(Number(e.target.value))}
-                  className="w-full accent-emerald-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-mono mb-1.5">
-                  <span className="text-slate-300 font-semibold">Soil Organic Carbon (% TOC)</span>
-                  <span className="text-sky-400 font-bold">{simSoc}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="1.0"
-                  max="6.0"
-                  step="0.1"
-                  value={simSoc}
-                  onChange={(e) => setSimSoc(Number(e.target.value))}
-                  className="w-full accent-sky-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
-                />
-                <span className="text-[10px] text-slate-500 font-mono">0-100cm Depth Soil Core Chromatography</span>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-mono mb-1.5">
-                  <span className="text-slate-300 font-semibold">Restored Plot Area</span>
-                  <span className="text-purple-400 font-bold">{simArea} Hectares</span>
-                </div>
-                <input
-                  type="range"
-                  min="20"
-                  max="500"
-                  step="5"
-                  value={simArea}
-                  onChange={(e) => setSimArea(Number(e.target.value))}
-                  className="w-full accent-purple-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
-                />
-              </div>
-
-            </div>
-
-            {/* Real-time Calculation Result Box (6 cols) */}
-            <div className="lg:col-span-6 p-6 rounded-3xl bg-slate-950/90 border border-teal-500/40 space-y-4 shadow-2xl">
-              
-              <div className="flex items-center justify-between border-b border-slate-850 pb-3">
-                <span className="text-xs font-mono text-teal-400 font-bold uppercase tracking-wider">
-                  Live MRV Mathematical Proof
-                </span>
-                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700/60 font-semibold">
-                  Deterministic
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono">
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <span className="text-slate-500 text-[10px] block">Above-Ground</span>
-                  <strong className="text-teal-300 text-sm">{agbCarbon.toFixed(1)}</strong>
-                  <span className="text-[9px] text-slate-400 block">tC/ha</span>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <span className="text-slate-500 text-[10px] block">Below-Ground</span>
-                  <strong className="text-emerald-300 text-sm">{bgbCarbon.toFixed(1)}</strong>
-                  <span className="text-[9px] text-slate-400 block">tC/ha</span>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                  <span className="text-slate-500 text-[10px] block">Soil (SOC)</span>
-                  <strong className="text-sky-300 text-sm">{socCarbon.toFixed(1)}</strong>
-                  <span className="text-[9px] text-slate-400 block">tC/ha</span>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-teal-950/80 via-slate-900 to-emerald-950/80 border border-teal-500/40 text-center space-y-1">
-                <span className="text-[11px] text-slate-400 font-mono uppercase tracking-wider">
-                  Net Verified Issuable Carbon Credits
-                </span>
-                <div className="text-3xl font-black font-mono text-white">
-                  {Math.round(netCredits).toLocaleString()}{' '}
-                  <span className="text-base font-bold text-teal-400">BCT Tokens</span>
-                </div>
-                <div className="text-[11px] text-slate-400 font-mono">
-                  Gross: {Math.round(grossTCO2e).toLocaleString()} tCO2e — Buffer (15%): -{Math.round(grossTCO2e * 0.15).toLocaleString()} tCO2e
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        </div>
+        <BlueCarbonMeasurementExplainer />
       </section>
 
       {/* CORE WORKFLOW BREAKDOWN */}

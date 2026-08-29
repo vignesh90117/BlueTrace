@@ -122,3 +122,83 @@
 .animate-pulse-glow {
   animation: pulseGlow 4s ease-in-out infinite;
 }
+
+/* ==========================================================================
+   OFFICIAL PRINT FORMATTING (Isolates only Certificate Receipts on Print)
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    background-image: none !important;
+    font-size: 11pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide entire website chrome, navigation, footers, interactive elements */
+  nav, 
+  footer, 
+  header, 
+  .no-print, 
+  button, 
+  a[href]:after,
+  .role-indicator-badge {
+    display: none !important;
+  }
+
+  /* Printable Certificate Canvas Isolation */
+  .printable-receipt-card {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 3px double #0d9488 !important;
+    border-radius: 12px !important;
+    padding: 24px !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+    display: block !important;
+  }
+
+  .printable-receipt-card * {
+    color: #0f172a !important;
+    text-shadow: none !important;
+  }
+
+  .printable-receipt-card .text-teal-400,
+  .printable-receipt-card .text-teal-300,
+  .printable-receipt-card .text-emerald-400 {
+    color: #0f766e !important;
+    font-weight: bold !important;
+  }
+
+  .printable-receipt-card .text-rose-400,
+  .printable-receipt-card .text-rose-300 {
+    color: #b91c1c !important;
+  }
+
+  .printable-receipt-card .text-purple-300 {
+    color: #6b21a8 !important;
+  }
+
+  .printable-receipt-card .bg-slate-900,
+  .printable-receipt-card .bg-slate-950,
+  .printable-receipt-card .bg-slate-900\/90,
+  .printable-receipt-card .bg-slate-900\/80,
+  .printable-receipt-card .bg-slate-900\/60 {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+
+  .printable-receipt-card .text-slate-400,
+  .printable-receipt-card .text-slate-500 {
+    color: #475569 !important;
+  }
+}

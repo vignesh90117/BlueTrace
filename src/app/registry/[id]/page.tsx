@@ -7,6 +7,7 @@ import { store } from '@/lib/store/registryStore';
 import { DynamicMapViewer as MapViewer } from '@/components/DynamicMapViewer';
 import { MRVCalculatorCard } from '@/components/MRVCalculatorCard';
 import { ReviewStageTracker } from '@/components/ReviewStageTracker';
+import { BlueCarbonMeasurementExplainer } from '@/components/BlueCarbonMeasurementExplainer';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -245,6 +246,9 @@ export default function PublicProjectProfilePage() {
         mrvResult={project.mrvResult}
         areaHectares={project.areaHectares}
       />
+
+      {/* Complete Educational Explainer on How Blue Carbon Credits Are Measured */}
+      <BlueCarbonMeasurementExplainer />
 
       {/* Blockchain Proof */}
       <div className="p-7 rounded-3xl glass-panel space-y-4 border border-slate-800 shadow-xl">
