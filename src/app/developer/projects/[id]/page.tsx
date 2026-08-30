@@ -235,6 +235,12 @@ export default function DeveloperProjectDetailPage() {
           areaHectares={project.areaHectares}
           ndviScore={ndvi}
           heightClass="h-[440px]"
+          creditsAvailable={project.totalCreditsIssued - project.totalCreditsRetired}
+          creditsIssued={project.totalCreditsIssued}
+          status={project.status}
+          batchId={project.blockchainTx?.issuedTokenBatchId}
+          projectId={project.id}
+          ecosystemType={project.ecosystemType}
         />
       </div>
 

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -257,6 +257,12 @@ export default function VerifierWorkbenchPage() {
               areaHectares={selectedProject.areaHectares}
               ndviScore={selectedProject.telemetryData?.ndviMeanIndex || 0.78}
               heightClass="h-[380px]"
+              creditsAvailable={selectedProject.totalCreditsIssued - selectedProject.totalCreditsRetired}
+              creditsIssued={selectedProject.totalCreditsIssued}
+              status={selectedProject.status}
+              batchId={selectedProject.blockchainTx?.issuedTokenBatchId}
+              projectId={selectedProject.id}
+              ecosystemType={selectedProject.ecosystemType}
             />
 
             <MRVCalculatorCard

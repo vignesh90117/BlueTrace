@@ -4,13 +4,17 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { store } from '@/lib/store/registryStore';
 import { ProjectStatus } from '@/types';
+import { DynamicMapViewer as MapViewer } from '@/components/DynamicMapViewer';
 import { 
   Search, 
   MapPin, 
   Sparkles, 
   ArrowUpRight,
   CheckCircle2,
-  Clock
+  Clock,
+  Coins,
+  Satellite,
+  Waves
 } from 'lucide-react';
 
 export default function RegistryExplorerPage() {
@@ -19,6 +23,7 @@ export default function RegistryExplorerPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
   const projects = store.getProjects();
+  const featured = projects.find(p => p.status === 'credits_issued') || projects[0];
 
   const filteredProjects = projects.filter((p) => {
     const matchesSearch = 
@@ -41,22 +46,23 @@ export default function RegistryExplorerPage() {
             <CheckCircle2 className="w-3.5 h-3.5" /> Credits Issued
           </span>
         );
-      case 'under_review':
+      case 'field_approved':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-            <Clock className="w-3.5 h-3.5" /> Under Verification
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30">
+            <CheckCircle2 className="w-3.5 h-3.5" /> Field Verified
           </span>
         );
-      case 'mrv_ready':
+      case 'under_review':
+      case 'field_review':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-            <Sparkles className="w-3.5 h-3.5" /> MRV Telemetry Ready
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse">
+            <Clock className="w-3.5 h-3.5" /> In Review
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
-            Approved
+            Registered
           </span>
         );
     }
@@ -65,16 +71,48 @@ export default function RegistryExplorerPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       
+      {/* Header */}
       <div>
-        <span className="text-xs font-bold text-teal-400 uppercase tracking-widest block mb-1">Public Registry</span>
+        <span className="text-xs font-bold text-teal-400 uppercase tracking-widest block mb-1">Public Registry Explorer</span>
         <h1 className="text-3xl font-extrabold text-white tracking-tight">
-          Blue Carbon Project Explorer
+          Blue Carbon Registry & GIS Explorer
         </h1>
         <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-          Search and verify registered coastal restoration projects. Every record is anchored by deterministic MRV calculations and immutable on-chain hashes.
+          Explore registered coastal restoration projects. Look for glowing <strong className="text-emerald-400">🪙 Carbon Credit Beacons</strong> on the map indicating verified BCT tokens ready for purchase or retirement.
         </p>
       </div>
 
+      {/* SATELLITE GIS MAP WITH CARBON CREDIT AVAILABILITY BEACON */}
+      {featured && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2 font-mono">
+              <Satellite className="w-4 h-4 text-teal-400" /> Featured Active Plot Satellite GIS
+            </h3>
+            <span className="text-xs font-mono text-emerald-400 flex items-center gap-1 font-bold">
+              <Coins className="w-3.5 h-3.5" />
+              {(featured.totalCreditsIssued - featured.totalCreditsRetired).toLocaleString()} BCT Available Here
+            </span>
+          </div>
+
+          <MapViewer
+            coordinates={featured.coordinates}
+            centerCoordinate={featured.centerCoordinate}
+            projectName={featured.name}
+            areaHectares={featured.areaHectares}
+            ndviScore={featured.telemetryData?.ndviMeanIndex || 0.78}
+            heightClass="h-[420px]"
+            creditsAvailable={featured.totalCreditsIssued - featured.totalCreditsRetired}
+            creditsIssued={featured.totalCreditsIssued}
+            status={featured.status}
+            batchId={featured.blockchainTx?.issuedTokenBatchId}
+            projectId={featured.id}
+            ecosystemType={featured.ecosystemType}
+          />
+        </div>
+      )}
+
+      {/* Search and Filters */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className="md:col-span-2 relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -97,6 +135,9 @@ export default function RegistryExplorerPage() {
             <option value="Mangrove">Mangroves</option>
             <option value="Seagrass">Seagrass Meadows</option>
             <option value="Salt Marsh">Salt Marshes</option>
+            <option value="Coastal Wetland">Coastal Wetlands</option>
+            <option value="Kelp Forest">Kelp Forests</option>
+            <option value="Tidal Estuary">Tidal Estuaries</option>
           </select>
         </div>
 
@@ -108,21 +149,22 @@ export default function RegistryExplorerPage() {
           >
             <option value="all">All Verification Statuses</option>
             <option value="credits_issued">Credits Issued</option>
-            <option value="under_review">Under Verification</option>
-            <option value="mrv_ready">MRV Ready</option>
+            <option value="field_approved">Field Approved</option>
+            <option value="field_review">In Review</option>
           </select>
         </div>
       </div>
 
+      {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProjects.map((project) => (
           <div
             key={project.id}
-            className="p-6 rounded-2xl glass-card flex flex-col justify-between hover:border-teal-500/40 transition-all group"
+            className="p-6 rounded-3xl glass-panel flex flex-col justify-between hover:border-teal-500/40 transition-all group border border-slate-800"
           >
             <div>
               <div className="flex items-center justify-between gap-2 mb-3">
-                <span className="font-mono text-[11px] text-teal-400 bg-teal-950/60 border border-teal-800/40 px-2 py-0.5 rounded-md">
+                <span className="font-mono text-[11px] text-teal-400 bg-teal-950/60 border border-teal-800/40 px-2 py-0.5 rounded-md font-bold">
                   {project.id}
                 </span>
                 {getStatusBadge(project.status)}
@@ -144,13 +186,15 @@ export default function RegistryExplorerPage() {
 
             <div className="space-y-4 pt-4 border-t border-slate-850">
               <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/60">
+                <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/60">
                   <span className="text-slate-500 block text-[10px]">Protected Area</span>
                   <span className="text-white font-bold">{project.areaHectares} ha</span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/60">
-                  <span className="text-slate-500 block text-[10px]">Issued Credits</span>
-                  <span className="text-emerald-400 font-bold">{project.totalCreditsIssued.toLocaleString()} BCT</span>
+                <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/60">
+                  <span className="text-slate-500 block text-[10px]">Available Credits</span>
+                  <span className="text-emerald-400 font-bold">
+                    {(project.totalCreditsIssued - project.totalCreditsRetired).toLocaleString()} BCT
+                  </span>
                 </div>
               </div>
 
@@ -158,7 +202,7 @@ export default function RegistryExplorerPage() {
                 href={'/registry/' + project.id}
                 className="w-full py-2.5 rounded-xl bg-slate-850 hover:bg-teal-500 text-slate-300 hover:text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
               >
-                <span>View Public Project Profile</span>
+                <span>View Public Project Profile & Map</span>
                 <ArrowUpRight className="w-4 h-4" />
               </Link>
             </div>
@@ -168,7 +212,7 @@ export default function RegistryExplorerPage() {
       </div>
 
       {filteredProjects.length === 0 && (
-        <div className="p-12 text-center rounded-2xl glass-card border-dashed border-slate-800">
+        <div className="p-12 text-center rounded-3xl glass-panel border-dashed border-slate-800">
           <p className="text-sm text-slate-400">No blue carbon projects match your search filters.</p>
         </div>
       )}

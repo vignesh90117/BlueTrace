@@ -143,6 +143,12 @@ export default function PublicProjectProfilePage() {
           areaHectares={project.areaHectares}
           ndviScore={project.telemetryData?.ndviMeanIndex || 0.78}
           heightClass="h-[460px]"
+          creditsAvailable={project.totalCreditsIssued - project.totalCreditsRetired}
+          creditsIssued={project.totalCreditsIssued}
+          status={project.status}
+          batchId={project.blockchainTx?.issuedTokenBatchId}
+          projectId={project.id}
+          ecosystemType={project.ecosystemType}
         />
       </div>
 

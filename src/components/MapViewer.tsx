@@ -10,21 +10,30 @@ import {
   Maximize2, 
   Minimize2, 
   Crosshair, 
-  Navigation,
-  Loader2,
-  Compass,
-  CheckCircle2,
-  ShieldCheck,
-  RotateCcw
+  Navigation, 
+  Loader2, 
+  Compass, 
+  CheckCircle2, 
+  ShieldCheck, 
+  RotateCcw,
+  Coins,
+  Flame,
+  ArrowRight
 } from 'lucide-react';
 
-interface MapViewerProps {
+export interface MapViewerProps {
   coordinates: GeoCoordinate[];
   centerCoordinate: GeoCoordinate;
   projectName: string;
   areaHectares: number;
   ndviScore?: number;
   heightClass?: string;
+  creditsAvailable?: number;
+  creditsIssued?: number;
+  status?: string;
+  batchId?: string;
+  projectId?: string;
+  ecosystemType?: string;
 }
 
 export const MapViewer: React.FC<MapViewerProps> = ({
@@ -33,7 +42,13 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   projectName,
   areaHectares,
   ndviScore = 0.76,
-  heightClass = 'h-[440px]'
+  heightClass = 'h-[440px]',
+  creditsAvailable,
+  creditsIssued,
+  status,
+  batchId,
+  projectId,
+  ecosystemType = 'Mangrove'
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -50,21 +65,20 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<string | null>(null);
 
+  const activeCredits = creditsAvailable ?? creditsIssued ?? (status === 'credits_issued' ? Math.round(areaHectares * 45.5) : 0);
+
   // Initialize and update Leaflet Map
   useEffect(() => {
     let isMounted = true;
 
-    // Dynamically import Leaflet in client
     import('leaflet').then((L) => {
       if (!isMounted || !mapContainerRef.current) return;
 
-      // Clean up previous instance
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
 
-      // Initialize map
       const map = L.map(mapContainerRef.current, {
         center: [centerCoordinate.lat, centerCoordinate.lng],
         zoom: 14,
@@ -74,7 +88,6 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
       mapInstanceRef.current = map;
 
-      // Google Satellite / Hybrid / Terrain Tile URLs
       const tileLayers: Record<string, any> = {
         google_satellite: L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
           maxZoom: 20,
@@ -110,13 +123,121 @@ export const MapViewer: React.FC<MapViewerProps> = ({
       polygonRef.current = polygon;
 
       polygon.bindPopup(`
-        <div style="font-family: inherit; padding: 4px;">
-          <div style="color: #2dd4bf; font-weight: bold; font-size: 13px; margin-bottom: 2px;">${projectName}</div>
-          <div style="color: #94a3b8; font-size: 11px; margin-bottom: 4px;">Blue Carbon Protected Zone</div>
-          <div style="background: rgba(15,23,42,0.8); padding: 6px; border-radius: 6px; font-family: monospace; font-size: 11px;">
-            <div>Area: <strong style="color: #fff;">${areaHectares} Hectares</strong></div>
-            <div>Sentinel-2 NDVI: <strong style="color: #34d399;">+${ndviScore.toFixed(2)}</strong></div>
-            <div>Status: <strong style="color: #2dd4bf;">Verified On-Chain</strong></div>
+        <div style="font-family: inherit; padding: 6px; min-width: 220px;">
+          <div style="color: #2dd4bf; font-weight: bold; font-size: 14px; margin-bottom: 2px;">${projectName}</div>
+          <div style="color: #94a3b8; font-size: 11px; margin-bottom: 6px;">${ecosystemType} Blue Carbon Protected Zone</div>
+          <div style="background: rgba(15,23,42,0.9); padding: 8px; border-radius: 8px; font-family: monospace; font-size: 11px; border: 1px solid rgba(45,212,191,0.3);">
+            <div style="margin-bottom: 3px;">Area: <strong style="color: #fff;">${areaHectares} Hectares</strong></div>
+            <div style="margin-bottom: 3px;">Sentinel-2 NDVI: <strong style="color: #34d399;">+${ndviScore.toFixed(2)}</strong></div>
+            <div style="color: #10b981; font-weight: bold; margin-top: 4px; border-top: 1px solid #334155; pt: 4px;">
+              🪙 ${activeCredits > 0 ? activeCredits.toLocaleString() + ' BCT Available' : 'MRV Verified Plot'}
+            </div>
+          </div>
+        </div>
+      `);
+
+      // =========================================================================
+      // PROMINENT ON-MAP CARBON CREDIT AVAILABILITY BEACON (Pinned at Center)
+      // =========================================================================
+      const hasCredits = activeCredits > 0;
+      const creditBadgeHtml = `
+        <div style="
+          position: relative; 
+          display: flex; 
+          align-items: center; 
+          gap: 6px; 
+          background: rgba(3, 7, 18, 0.92); 
+          border: 2px solid ${hasCredits ? '#10b981' : '#2dd4bf'}; 
+          padding: 6px 12px; 
+          border-radius: 9999px; 
+          box-shadow: 0 0 20px ${hasCredits ? 'rgba(16, 185, 129, 0.6)' : 'rgba(45, 212, 191, 0.4)'}; 
+          cursor: pointer;
+          white-space: nowrap;
+          transform: translate(-50%, -50%);
+          font-family: inherit;
+        ">
+          <!-- Pulsing Ring -->
+          <div style="
+            position: absolute; 
+            inset: -4px; 
+            border-radius: 9999px; 
+            background: ${hasCredits ? 'rgba(16, 185, 129, 0.25)' : 'rgba(45, 212, 191, 0.25)'}; 
+            animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+            pointer-events: none;
+          "></div>
+
+          <div style="
+            width: 20px; 
+            height: 20px; 
+            border-radius: 50%; 
+            background: linear-gradient(135deg, #10b981, #06b6d4); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 11px;
+            font-weight: 900;
+            color: #030712;
+            box-shadow: 0 0 10px #10b981;
+          ">
+            🪙
+          </div>
+
+          <div style="display: flex; flex-direction: column; line-height: 1.1;">
+            <span style="font-size: 11px; font-weight: 900; color: #ffffff; letter-spacing: -0.01em;">
+              ${hasCredits ? activeCredits.toLocaleString() + ' BCT' : 'Carbon Credits'}
+            </span>
+            <span style="font-size: 9px; font-weight: 700; color: ${hasCredits ? '#34d399' : '#38bdf8'}; font-family: monospace;">
+              ${hasCredits ? '● Available to Buy/Retire' : '● Verified Plot'}
+            </span>
+          </div>
+        </div>
+      `;
+
+      const creditBeaconIcon = L.divIcon({
+        className: 'carbon-credit-beacon',
+        html: creditBadgeHtml,
+        iconSize: [160, 36],
+        iconAnchor: [80, 18],
+      });
+
+      const centerBeaconMarker = L.marker([centerCoordinate.lat, centerCoordinate.lng], { 
+        icon: creditBeaconIcon, 
+        zIndexOffset: 500 
+      }).addTo(map);
+
+      centerBeaconMarker.bindPopup(`
+        <div style="font-family: inherit; padding: 6px; min-width: 240px;">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <span style="font-size: 14px;">🪙</span>
+            <strong style="color: #34d399; font-size: 13px;">Blue Carbon Credits Verified</strong>
+          </div>
+          <div style="color: #ffffff; font-size: 13px; font-weight: bold; margin-bottom: 2px;">${projectName}</div>
+          <div style="color: #94a3b8; font-size: 11px; margin-bottom: 8px;">${ecosystemType} • ${areaHectares} Ha Protected</div>
+          
+          <div style="background: rgba(15,23,42,0.95); padding: 8px; border-radius: 8px; font-family: monospace; font-size: 11px; border: 1px solid rgba(16,185,129,0.3); margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span style="color: #94a3b8;">Available Stock:</span>
+              <strong style="color: #34d399;">${hasCredits ? activeCredits.toLocaleString() + ' BCT' : 'Ready for Mint'}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span style="color: #94a3b8;">Batch ID:</span>
+              <strong style="color: #38bdf8;">${batchId || 'BCT-2026-V1-001'}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94a3b8;">Methodology:</span>
+              <strong style="color: #e2e8f0;">IPCC VM0033</strong>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 6px;">
+            <a href="/portfolio" style="flex: 1; text-align: center; background: #10b981; color: #030712; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; text-decoration: none;">
+              Buy / Retire
+            </a>
+            ${projectId ? `
+              <a href="/registry/${projectId}" style="flex: 1; text-align: center; background: #1e293b; color: #e2e8f0; padding: 6px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; text-decoration: none; border: 1px solid #334155;">
+                View Dossier
+              </a>
+            ` : ''}
           </div>
         </div>
       `);
@@ -131,7 +252,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
               height: 12px; 
               background: #38bdf8; 
               border: 2px solid #042f2e; 
-              border-radius: 50%;
+              border-radius: 50%; 
               box-shadow: 0 0 10px #38bdf8;
             "></div>
           `,
@@ -154,7 +275,6 @@ export const MapViewer: React.FC<MapViewerProps> = ({
         setCursorPos({ lat: e.latlng.lat, lng: e.latlng.lng });
       });
 
-      // If user location already detected, re-add user marker
       if (userLocation) {
         addUserMarkerToMap(L, map, userLocation.lat, userLocation.lng, userLocation.accuracy);
       } else {
@@ -171,15 +291,13 @@ export const MapViewer: React.FC<MapViewerProps> = ({
         mapInstanceRef.current = null;
       }
     };
-  }, [coordinates, centerCoordinate, projectName, areaHectares, ndviScore, mapType, showNdvi]);
+  }, [coordinates, centerCoordinate, projectName, areaHectares, ndviScore, mapType, showNdvi, activeCredits]);
 
   // Helper to add User Location Marker on Map
   const addUserMarkerToMap = (L: any, map: any, lat: number, lng: number, accuracy: number) => {
-    // Remove existing user marker & circle if any
     if (userMarkerRef.current) map.removeLayer(userMarkerRef.current);
     if (userAccuracyCircleRef.current) map.removeLayer(userAccuracyCircleRef.current);
 
-    // Accuracy Circle
     const accuracyCircle = L.circle([lat, lng], {
       radius: Math.max(accuracy, 25),
       color: '#38bdf8',
@@ -189,7 +307,6 @@ export const MapViewer: React.FC<MapViewerProps> = ({
     }).addTo(map);
     userAccuracyCircleRef.current = accuracyCircle;
 
-    // Glowing Animated User Location Beacon
     const userBeaconIcon = L.divIcon({
       className: 'user-location-beacon',
       html: `
@@ -219,7 +336,6 @@ export const MapViewer: React.FC<MapViewerProps> = ({
     map.flyTo([lat, lng], 16, { duration: 1.5 });
   };
 
-  // Handle "Locate Me" Button Click
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
       setLocationStatus('Geolocation is not supported by your browser.');
@@ -250,15 +366,10 @@ export const MapViewer: React.FC<MapViewerProps> = ({
         setLocationStatus(`Location error: ${err.message}`);
         setTimeout(() => setLocationStatus(null), 4000);
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
-  // Reset View to Project Plot
   const handleResetToProject = () => {
     if (mapInstanceRef.current && polygonRef.current) {
       mapInstanceRef.current.fitBounds(polygonRef.current.getBounds(), { padding: [40, 40] });
@@ -271,7 +382,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
         isFullscreen ? 'fixed inset-0 z-50 h-screen rounded-none' : 'rounded-3xl'
       } overflow-hidden border border-teal-500/30 glass-panel shadow-2xl transition-all duration-300`}
     >
-      {/* Real Interactive Leaflet Map Div */}
+      {/* Interactive Leaflet Map Div */}
       <div ref={mapContainerRef} className="w-full h-full" />
 
       {/* Loading Overlay */}
@@ -284,20 +395,22 @@ export const MapViewer: React.FC<MapViewerProps> = ({
         </div>
       )}
 
-      {/* Top Left: Satellite Provider & Status Notifications */}
+      {/* Top Left: Carbon Credits Available Badge & Satellite HUD */}
       <div className="absolute top-4 left-4 z-[400] flex flex-col gap-2 pointer-events-auto max-w-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="px-3.5 py-1.5 rounded-xl bg-slate-950/85 border border-teal-500/40 backdrop-blur-md text-xs font-mono text-slate-100 flex items-center gap-2 shadow-xl">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <Satellite className="w-4 h-4 text-teal-400" />
-            <span className="font-bold text-white uppercase tracking-wider text-[11px]">Google Satellite GIS</span>
-            <span className="text-[10px] text-teal-300 bg-teal-950/90 px-1.5 py-0.5 rounded border border-teal-700/60 font-semibold">
-              0.3m/px Live
+          
+          {/* Carbon Credit Indicator Chip */}
+          <div className="px-3.5 py-1.5 rounded-xl bg-slate-950/90 border border-emerald-500/50 backdrop-blur-md text-xs font-mono text-white flex items-center gap-2 shadow-2xl shadow-emerald-500/20">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+            <Coins className="w-4 h-4 text-emerald-400" />
+            <span className="font-bold text-emerald-300">
+              {activeCredits > 0 ? `${activeCredits.toLocaleString()} BCT Available` : 'MRV Verified Plot'}
             </span>
           </div>
 
-          <div className="px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-xs font-mono font-bold text-emerald-400 shadow-xl">
-            {areaHectares} Ha Protected Plot
+          <div className="px-3 py-1.5 rounded-xl bg-slate-950/85 border border-teal-500/40 backdrop-blur-md text-xs font-mono text-slate-100 flex items-center gap-1.5 shadow-xl">
+            <Satellite className="w-3.5 h-3.5 text-teal-400" />
+            <span className="font-bold text-white uppercase text-[10px]">Google Satellite GIS</span>
           </div>
         </div>
 
@@ -331,17 +444,16 @@ export const MapViewer: React.FC<MapViewerProps> = ({
           ) : (
             <>
               <Navigation className="w-3.5 h-3.5 fill-current" />
-              <span>{userLocation ? 'My GPS Location' : 'Locate Me'}</span>
+              <span>{userLocation ? 'My GPS' : 'Locate Me'}</span>
             </>
           )}
         </button>
 
-        {/* Reset View to Project Plot Button */}
         {userLocation && (
           <button
             onClick={handleResetToProject}
             className="p-1.5 text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl transition-colors"
-            title="Reset view back to Mangrove Project Boundary"
+            title="Reset view back to Project Boundary"
           >
             <RotateCcw className="w-4 h-4 text-teal-400" />
           </button>
@@ -369,17 +481,6 @@ export const MapViewer: React.FC<MapViewerProps> = ({
             }`}
           >
             Hybrid
-          </button>
-
-          <button
-            onClick={() => setMapType('google_terrain')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-              mapType === 'google_terrain' 
-                ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 shadow-md' 
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Bathymetry
           </button>
         </div>
 
@@ -436,9 +537,10 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
         <div className="flex items-center gap-4 text-[11px] font-mono">
           <div className="flex items-center gap-1.5">
-            <span className="text-slate-400">Sentinel-2 NDVI:</span>
-            <span className="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700/60 text-emerald-300 font-bold">
-              +{ndviScore.toFixed(2)} (High Vigor)
+            <span className="text-slate-400">Stock Availability:</span>
+            <span className="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700/60 text-emerald-300 font-bold flex items-center gap-1">
+              <Coins className="w-3 h-3 text-emerald-400" />
+              {activeCredits > 0 ? `${activeCredits.toLocaleString()} BCT` : 'Verified'}
             </span>
           </div>
 

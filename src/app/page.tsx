@@ -199,6 +199,12 @@ export default function LandingPage() {
           areaHectares={featuredProject.areaHectares}
           ndviScore={featuredProject.telemetryData?.ndviMeanIndex || 0.78}
           heightClass="h-[480px]"
+          creditsAvailable={featuredProject.totalCreditsIssued - featuredProject.totalCreditsRetired}
+          creditsIssued={featuredProject.totalCreditsIssued}
+          status={featuredProject.status}
+          batchId={featuredProject.blockchainTx?.issuedTokenBatchId}
+          projectId={featuredProject.id}
+          ecosystemType={featuredProject.ecosystemType}
         />
       </section>
 
